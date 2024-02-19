@@ -13,8 +13,6 @@ document.addEventListener("DOMContentLoaded", function () {
     var scoreBlack = 0;
     var isWhiteTurn = true;
     var draggedPiece = null;
-    var originalCell = null;
-    var validMoves = [];
     var draggedPath = [];
 
     var boardContainer = document.getElementById('board-container');
@@ -24,6 +22,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Function to display the board
     function displayBoard() {
+        boardContainer.innerHTML = '';
         for (var i = 0; i < 5; i++) {
             for (var j = 0; j < 5; j++) {
                 var cell = document.createElement('div');
@@ -50,14 +49,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
                     piece.addEventListener('dragstart', function (event) {
                         draggedPiece = event.target;
-                        originalCell = event.target.parentNode;
                         draggedPath = [];
                     });
 
                     piece.addEventListener('dragend', function () {
                         draggedPiece = null;
-                        originalCell = null;
-                        // draggedPath = [];
+                        draggedPath = [];
                     });
                     
                 }
@@ -68,7 +65,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         var cellId = event.target.id;
                         var [_, row, col] = cellId.split('-');
                         var newPosition = { row: parseInt(row), col: parseInt(col) };
-                        if (!isPositionInPath(newPosition)) {
+                        if (!isInArray(draggedPath,newPosition)) {
                             draggedPath.push(newPosition);
                         }
                     }
@@ -79,6 +76,9 @@ document.addEventListener("DOMContentLoaded", function () {
                     if (draggedPiece && isValid(draggedPath)) {
                         draggedPiece.id = event.target.id.replace('cell','piece');
                         event.target.appendChild(draggedPiece);
+                        draggedPiece.classList.remove('highlight');
+                        draggedPiece.removeAttribute('draggable');
+                        isWhiteTurn = !isWhiteTurn;
                     }
                     draggedPiece = null;
                     draggedPath = [];
@@ -90,22 +90,35 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // Function to check if a position is already in the path
-    function isPositionInPath(position) {
-        return draggedPath.some(function (p) {
+    function isInArray(array,position) {
+        return array.some(function (p) {
             return p.row === position.row && p.col === position.col;
         });
     }
 
     function isValid(draggedPath){
-        if (draggedPath.length===1){
-            alert("Please move peice to a different cell.")
-            return false;
-        } 
-        var nbr = draggedPath.pop();
-        if (document.getElementById(nbr).hasChildNodes()) {
-            alert("Please move piece to an empty cell")
-        } else {
-            
+        console.log(draggedPath);
+        let path_len = draggedPath.length;
+        if (path_len<3)
+            return true;
+        for (let i=1; i<path_len; i+=2){
+            if (!(document.getElementById('cell-' + draggedPath[i].row + '-' + draggedPath[i].col).hasChildNodes())) return false;
+            var cur = document.getElementById('piece-' + draggedPath[i].row + '-' + draggedPath[i].col);
+            if (isWhiteTurn){
+                if (cur.classList.contains('white')){
+                    alert("Invalid move!");
+                    return false;
+                }
+            scoreWhite += 1;
+            } else {
+                if (!cur.classList.contains('white')){
+                    alert("Invalid move!");
+                    return false;
+                }
+            scoreBlack += 1;
+            }
+            cur.remove();
+            updateScores();
         }
         return true;
     }
@@ -144,6 +157,13 @@ document.addEventListener("DOMContentLoaded", function () {
     // Function to reset the game
     function resetGame() {
         // Add logic to reset the game
+        scoreWhite = 0;
+        scoreBlack = 0;
+        isWhiteTurn = true;
+        draggedPiece = null;
+        draggedPath = [];
+        displayBoard();
+        updateScores();
     }
 
     // Event listener for reset button
